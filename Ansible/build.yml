@@ -1,0 +1,87 @@
+- name: "Vérification des prérequis"
+  block:
+    - name: "Vérifier la présence de Git"
+      command: git --version
+      register: git_check
+      failed_when: git_check.rc != 0
+      
+    - name: "Vérifier la présence de Node.js"
+      command: node --version
+      register: node_check
+      failed_when: node_check.rc != 0
+
+- name: "Création du répertoire de build"
+  file:
+    path: "{{ build_dir }}"
+    state: directory
+    mode: '0755'
+
+- name: "Clone du repository"
+  git:
+    repo: "{{ repo_url }}"
+    dest: "{{ build_dir }}"
+    version: "{{ target_commit }}"
+    force: true
+  register: git_clone_result
+
+- name: "Affichage du commit utilisé"
+  debug:
+    msg: "Commit utilisé: {{ CI_COMMIT_SHORT_SHA}} ({{ git_clone_result.after }})"
+
+- name: "Création d'un fichier vide avec le nom du commit"
+  file:
+    path: "{{ build_dir }}/.{{ CI_COMMIT_SHORT_SHA}}."
+    state: touch
+    mode: '0644'
+
+- name: "Vérification du fichier package.json"
+  stat:
+    path: "{{ build_dir }}/package.json"
+  register: package_json
+
+- name: "Installation des dépendances NPM"
+  npm:
+    path: "{{ build_dir }}"
+    state: present
+    production: false
+  when: package_json.stat.exists
+
+
+
+- name: "Suppression des fichiers inutiles pour le déploiement"
+  file:
+    path: "{{ build_dir }}/{{ item }}"
+    state: absent
+  loop:
+    - ".git"
+    - ".gitignore"
+    - "README.md"
+    - ".github"
+  ignore_errors: true
+
+- name: "Création de l'archive complète du projet"
+  archive:
+    path: "{{ build_dir }}/"
+    dest: "{{ build_dir }}/{{ project_archive }}"
+    format: gz
+    exclude_path:
+      - "{{ build_dir }}/{{ project_archive }}"  
+
+- name: "Vérification de l'archive créée"
+  stat:
+    path: "{{ build_dir }}/{{ project_archive }}"
+  register: project_archive_stat
+
+
+
+
+
+- name: "Message de succès"
+  debug:
+    msg: "✅ Archive du projet créée : {{ project_archive_stat.stat.path }}"
+  when: project_archive_stat.stat.exists
+
+- name: "Message d'erreur si archive absente"
+  fail:
+    msg: "❌ L'archive du projet n'a pas pu être créée !"
+  when: not project_archive_stat.stat.exists

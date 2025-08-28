@@ -1,0 +1,66 @@
+- name: "Init Build Directory"
+  hosts: local_build
+  gather_facts: true
+  vars_files:
+    - vars.yml
+  tasks:
+    - name: "Définir un répertoire de build unique"
+      set_fact:
+        build_dir: "/tmp/build_{{ ansible_date_time.epoch }}"
+      run_once: true
+
+- name: "Build Application"
+  hosts: local_build
+  gather_facts: false
+  vars_files:
+    - vars.yml
+  tasks:
+    - name: "Étape 1: Build de l'application"
+      import_tasks: build.yml
+
+- name: "Deploy to Servers"
+  hosts: node_server
+  gather_facts: true
+  vars_files:
+    - vars.yml
+  tasks:
+    - name: "Vérifier l'existence du fichier CI_COMMIT_SHORT_SHA"
+      stat:
+        path: "{{ LOCATION_PATH }}/{{ CI_PROJECT_NAME }}/.{{ CI_COMMIT_SHORT_SHA }}."
+      register: commit_file_check
+      become: true
+
+    - block:
+        - name: "Installation système"
+          include_tasks: system_install.yml
+          vars:
+            setup_system: true
+
+        - name: "Déploiement de l'application"
+          include_tasks: deploy.yml
+
+        - name: "Redémarrer SSH après configuration"
+          service:
+            name: sshd
+            state: restarted
+          become: true
+      when: not commit_file_check.stat.exists
+
+  handlers:
+    - name: restart_ssh
+      service:
+        name: ssh
+        state: restarted
+      become: true
+
+- name: "Cleanup"
+  hosts: local_build
+  gather_facts: false
+  vars_files:
+    - vars.yml
+  tasks:
+    - name: "Nettoyage des fichiers temporaires de build"
+      file:
+        path: "{{ build_dir }}"
+        state: absent
+      ignore_errors: true

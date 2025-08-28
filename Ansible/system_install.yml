@@ -1,0 +1,169 @@
+- name: "Création du groupe applicatif"
+  group:
+    name: "{{ app_group }}"
+    state: present
+  become: true
+
+- name: "Création de l'utilisateur applicatif"
+  user:
+    name: "{{ app_user }}"
+    group: "{{ app_group }}"
+    home: "{{ LOCATION_PATH }}"
+    shell: /bin/bash
+    create_home: true
+    state: present
+  become: true
+
+
+- name: "Nettoyage du répertoire d'application existant"
+  file:
+    path: "{{ LOCATION_PATH }}/{{CI_PROJECT_NAME}}"
+    state: absent
+  become: true
+
+- name: "Création des répertoires applicatifs"
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ app_user }}"
+    group: "{{ app_group }}"
+    mode: '0755'
+  loop:
+    - "{{ LOCATION_PATH }}/{{CI_PROJECT_NAME}}"
+    - "{{ LOCATION_PATH }}/{{CI_PROJECT_NAME}}/logs"
+    - "{{ LOCATION_PATH }}/{{CI_PROJECT_NAME}}/backups"
+    - "{{ LOCATION_PATH }}/{{CI_PROJECT_NAME}}/releases"
+  become: true
+
+- name: "Installation des paquets système requis"
+  apt:
+    name:
+      - curl
+      - wget
+      - tar
+      - gzip
+      - unzip
+      - git
+      - htop
+      - vim
+      - ufw
+      - logrotate
+    state: present
+    update_cache: true
+  become: true
+
+- name: "Installer NVM et Node.js"
+  shell: |
+    export HOME="{{ LOCATION_PATH }}"
+    curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.6/install.sh | bash
+    export NVM_DIR="{{ LOCATION_PATH }}/.nvm"
+    [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+    nvm install {{ node_version | default(22) }}
+    nvm use {{ node_version | default(22) }}
+    npm install -g pm2
+  args:
+    executable: /bin/bash
+    creates: "{{ LOCATION_PATH }}/.nvm/versions/node/v{{ node_version | default(22) }}*/bin/pm2"
+  become: true
+
+- name: "Copie de l'archive du projet vers le répertoire accessible"
+  copy:
+    src: "{{ hostvars['localhost']['build_dir'] }}/{{ project_archive }}"
+    dest: "{{ LOCATION_PATH }}/{{CI_PROJECT_NAME}}/releases/{{ project_archive }}"
+    owner: "{{ app_user }}"
+    group: "{{ app_group }}"
+    mode: '0644'
+  become: true
+
+- name: "Copie du fichier CI_COMMIT_SHORT_SHA"
+  copy:
+    src: "{{ hostvars['localhost']['build_dir'] }}/.{{ CI_COMMIT_SHORT_SHA }}."
+    dest: "{{ LOCATION_PATH }}/{{CI_PROJECT_NAME}}/"
+    owner: "{{ app_user }}"
+    group: "{{ app_group }}"
+    mode: '0644'
+  become: true
+
+
+
+- name: "Re-création du répertoire d'application"
+  file:
+    path: "{{ LOCATION_PATH }}/{{CI_PROJECT_NAME}}"
+    state: directory
+    owner: "{{ app_user }}"
+    group: "{{ app_group }}"
+    mode: '0755'
+  become: true
+
+- name: "Extraction de l'archive dans le répertoire d'application"
+  unarchive:
+    src: "{{ LOCATION_PATH }}/{{CI_PROJECT_NAME}}/releases/{{ project_archive }}"
+    dest: "{{ LOCATION_PATH }}/{{CI_PROJECT_NAME}}"
+    owner: "{{ app_user }}"
+    group: "{{ app_group }}"
+    remote_src: true
+  become: true
+
+- name: "Suppression de l'archive après extraction"
+  file:
+    path: "{{ LOCATION_PATH }}/{{CI_PROJECT_NAME}}/releases"
+    state: absent
+  become: true
+
+
+
+- name: "Configurer PM2 pour démarrer automatiquement avec systemd"
+  shell: |
+    export NVM_DIR="{{ LOCATION_PATH }}/.nvm"
+    [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+    pm2 startup systemd -u {{ app_user }} --hp {{ LOCATION_PATH }}
+  args:
+    executable: /bin/bash
+  become: true
+
+- name: "Sauvegarder la liste des processus PM2"
+  shell: |
+    export NVM_DIR="{{ LOCATION_PATH }}/.nvm"
+    [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+    pm2 save
+  args:
+    executable: /bin/bash
+  become: true
+
+# --- Sécurité SSH ---
+- name: "Configuration SSH - Désactivation de l'authentification par mot de passe"
+  lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: '^#?PasswordAuthentication'
+    line: 'PasswordAuthentication no'
+    backup: true
+  become: true
+  notify: restart_ssh
+
+- name: "Configuration SSH - Désactivation du login root"
+  lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: '^#?PermitRootLogin'
+    line: 'PermitRootLogin no'
+    backup: true
+  become: true
+  notify: restart_ssh
+
+
+
+# --- Rotation des logs ---
+- name: "Configuration de la rotation des logs"
+  copy:
+    content: |
+      {{ LOCATION_PATH }}/{{CI_PROJECT_NAME}}/logs/*.log {
+          daily
+          rotate 7
+          compress
+          delaycompress
+          missingok
+          notifempty
+          su {{ app_user }} {{ app_group }}
+      }
+    dest: "/etc/logrotate.d/{{ app_user }}"
+    mode: '0644'
+  become: true
