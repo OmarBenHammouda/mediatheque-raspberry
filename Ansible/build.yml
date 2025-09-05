@@ -18,11 +18,12 @@
 
 - name: "Clone du repository"
   git:
-    repo: "{{ repo_url }}"
+    repo: "https://oauth:{{ TOKEN }}@{{ REGISTRY_HOST }}/{{ PROJECT_URL }}.git"
     dest: "{{ build_dir }}"
     version: "{{ target_commit }}"
     force: true
   register: git_clone_result
+
 
 - name: "Affichage du commit utilisé"
   debug:
