@@ -1,3 +1,10 @@
+- name: "Afficher le répertoire de build"
+  debug:
+    msg: "Le répertoire de build est {{ hostvars['localhost']['build_dir'] }}/{{ project_archive }}"
+
+
+
+
 - name: "Création du groupe applicatif"
   group:
     name: "{{ app_group }}"

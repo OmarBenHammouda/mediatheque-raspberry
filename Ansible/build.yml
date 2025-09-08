@@ -20,7 +20,7 @@
   git:
     repo: "https://oauth:{{ TOKEN }}@{{ REGISTRY_HOST }}/{{ PROJECT_URL }}.git"
     dest: "{{ build_dir }}"
-    version: "{{ target_commit }}"
+    version: "{{ CI_COMMIT_SHORT_SHA }}"
     force: true
   register: git_clone_result
 
