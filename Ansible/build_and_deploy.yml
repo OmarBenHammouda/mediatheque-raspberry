@@ -6,7 +6,7 @@
   tasks:
     - name: "Définir un répertoire de build unique"
       set_fact:
-        build_dir: "/tmp/build_{{ ansible_date_time.epoch }}"
+        build_dir: "/tmp/build"
       run_once: true
 
 - name: "Build Application"
@@ -39,12 +39,8 @@
         - name: "Déploiement de l'application"
           include_tasks: deploy.yml
 
-        - name: "Redémarrer SSH après configuration"
-          service:
-            name: sshd
-            state: restarted
-          become: true
-      when:  commit_file_check.stat.exists
+        
+      when: not commit_file_check.stat.exists
 
   handlers:
     - name: restart_ssh

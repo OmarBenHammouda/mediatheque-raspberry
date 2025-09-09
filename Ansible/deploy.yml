@@ -1,3 +1,51 @@
+- name: "Copie de l'archive du projet vers le répertoire accessible"
+  copy:
+    src: "{{ hostvars['localhost']['build_dir'] }}/{{ project_archive }}"
+    dest: "{{ LOCATION_PATH }}/{{CI_PROJECT_NAME}}/releases/{{ project_archive }}"
+    owner: "{{ app_user }}"
+    group: "{{ app_group }}"
+    mode: '0644'
+  become: true
+
+- name: "Copie du fichier CI_COMMIT_SHORT_SHA"
+  copy:
+    src: "{{ hostvars['localhost']['build_dir'] }}/.{{ CI_COMMIT_SHORT_SHA }}."
+    dest: "{{ LOCATION_PATH }}/{{CI_PROJECT_NAME}}/"
+    owner: "{{ app_user }}"
+    group: "{{ app_group }}"
+    mode: '0644'
+  become: true
+
+
+
+- name: "Re-création du répertoire d'application"
+  file:
+    path: "{{ LOCATION_PATH }}/{{CI_PROJECT_NAME}}"
+    state: directory
+    owner: "{{ app_user }}"
+    group: "{{ app_group }}"
+    mode: '0755'
+  become: true
+
+- name: "Extraction de l'archive dans le répertoire d'application"
+  unarchive:
+    src: "{{ LOCATION_PATH }}/{{CI_PROJECT_NAME}}/releases/{{ project_archive }}"
+    dest: "{{ LOCATION_PATH }}/{{CI_PROJECT_NAME}}"
+    owner: "{{ app_user }}"
+    group: "{{ app_group }}"
+    remote_src: true
+  become: true
+
+- name: "Suppression de l'archive après extraction"
+  file:
+    path: "{{ LOCATION_PATH }}/{{CI_PROJECT_NAME}}/releases"
+    state: absent
+  become: true
+
+
+
+
+
 
 - name: "Arrêt des processus PM2 existants"
   shell: |
