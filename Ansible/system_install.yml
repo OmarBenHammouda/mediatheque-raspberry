@@ -22,6 +22,7 @@
     state: absent
   become: true
 
+
 - name: "Création des répertoires applicatifs"
   file:
     path: "{{ item }}"
@@ -32,7 +33,6 @@
   loop:
     - "{{ LOCATION_PATH }}/{{CI_PROJECT_NAME}}"
     - "{{ LOCATION_PATH }}/{{CI_PROJECT_NAME}}/logs"
-    - "{{ LOCATION_PATH }}/{{CI_PROJECT_NAME}}/backups"
     - "{{ LOCATION_PATH }}/{{CI_PROJECT_NAME}}/releases"  
   become: true
 
@@ -115,6 +115,6 @@
 
 - name: Add user to groups video, audio, and render
   user:
-    name: "{{ appuser }}"
-    groups: video,audio,render
+    name: "{{ app_user }}"
+    groups: video,audio ,render
     append: yes

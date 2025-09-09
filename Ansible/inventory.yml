@@ -7,21 +7,6 @@ all:
 
     node_server:
       hosts:
-        # 52.157.243.79:
-        #   ansible_user: azureuser
-        #   ansible_ssh_private_key_file: ~/.ssh/cle.pem
-         ubuntu2:
-          ansible_host: 127.0.0.1
-          ansible_port: 2222
-          ansible_user: root
-          ansible_ssh_private_key_file: ~/.ssh/id_rsa_Docker_Raspberry
-        # ubuntu3:
-        #   ansible_host: 127.0.0.1
-        #   ansible_port: 2223
-        #   ansible_user: root
-        #   ansible_ssh_private_key_file: ~/.ssh/cle.pem
-         ubuntu1:
-           ansible_host: 127.0.0.1
-           ansible_port: 2221
-           ansible_user: root
-           ansible_ssh_private_key_file: ~/.ssh/id_rsa_Docker_Raspberry
+        raspberry1:
+          ansible_host: 192.168.1.39
+          ansible_user: admin

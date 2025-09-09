@@ -45,16 +45,10 @@
 
 
 
-
-
 - name: "Arrêt des processus PM2 existants"
   shell: |
-    export NVM_DIR="{{ LOCATION_PATH }}/.nvm"
-    [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
     pm2 delete {{ app_name }} || true
     pm2 kill || true
-  args:
-    executable: /bin/bash
   become: true
   become_user: "{{ app_user }}"
   ignore_errors: true
@@ -67,7 +61,7 @@
       {
         "name": "{{ app_name }}",
         "script": "{{ main_file | basename }}",
-        "cwd": "{{ LOCATION_PATH }}/{{CI_PROJECT_NAME}}",
+        "cwd": "{{ LOCATION_PATH }}/{{CI_PROJECT_NAME}}/app",
         "instances": 1,
         "autorestart": true,
         "watch": false,
@@ -89,17 +83,14 @@
     mode: '0644'
   become: true
 
+
 - name: "Démarrage de l'application avec PM2"
   shell: |
-    export NVM_DIR="{{ LOCATION_PATH }}/.nvm"
-    [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
     cd {{ LOCATION_PATH }}/{{CI_PROJECT_NAME}}
     pm2 start ecosystem.config.json
   args:
     executable: /bin/bash
   become: true
- 
-  
   register: pm2_start_result
 
 - name: "Attendre le démarrage de l'application"
@@ -107,10 +98,9 @@
     timeout: 30
   delegate_to: localhost
 
+
 - name: "Vérification du statut PM2"
   shell: |
-    export NVM_DIR="{{ LOCATION_PATH }}/.nvm"
-    [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
     pm2 status {{ app_name }}
   args:
     executable: /bin/bash
@@ -118,96 +108,31 @@
   
   register: pm2_status_result
 
+
 - name: "Affichage du statut PM2"
   debug:
     msg: "{{ pm2_status_result.stdout_lines }}"
 
 - name: "Vérification que l'application est en cours d'exécution"
   shell: |
-    export NVM_DIR="{{ LOCATION_PATH }}/.nvm"
-    [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+    
     APP_STATUS=$(pm2 describe "{{ app_name }}" | grep "status" | awk '{print $4}')
     echo "Le statut de {{ app_name }} est : $APP_STATUS"
   args:
     executable: /bin/bash
   #become_user: "{{ app_user }}"
-  
   register: app_status
   failed_when: app_status.stdout != "online"
 
-- name: "Health check - Vérification du port d'écoute"
-  wait_for:
-    host: "{{ ansible_default_ipv4.address }}"
-    port: "{{ app_port | default(3000) }}"
-    timeout: 60
-    delay: 5
-  register: port_check
-  ignore_errors: true
-
-- name: "Health check - Test HTTP basique (si port accessible)"
-  uri:
-    url: "http://{{ ansible_default_ipv4.address }}:{{ app_port | default(3000) }}"
-    method: GET
-    timeout: 10
-    status_code: [200, 301, 302, 404]  
-  register: http_check
-  ignore_errors: true
-  when: port_check is succeeded
-
-- name: "Affichage du résultat du health check HTTP"
-  debug:
-    msg: 
-      - "✅ Application accessible sur http://{{ ansible_default_ipv4.address }}:{{ app_port | default(3000) }}"
-      - "Status: {{ http_check.status | default('N/A') }}"
-  when: http_check is succeeded and port_check is succeeded
-
-- name: "Avertissement si health check échoue"
-  debug:
-    msg: 
-      - "⚠️  Health check HTTP a échoué ou le port n'est pas accessible"
-      - "Port testé: {{ app_port | default(3000) }}"
-      - "Vérifiez que votre application écoute sur le bon port"
-  when: http_check is failed or port_check is failed
-
 - name: "Sauvegarde de la configuration PM2"
   shell: |
-    export NVM_DIR="{{ LOCATION_PATH }}/.nvm"
-    [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+    
     pm2 save
   args:
     executable: /bin/bash
   become: true
   become_user: "{{ app_user }}"
 
-- name: "Affichage des logs récents de l'application"
-  shell: |
-    export NVM_DIR="{{ LOCATION_PATH }}/.nvm"
-    [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-    pm2 logs {{ app_name }} --lines 10 --nostream
-  args:
-    executable: /bin/bash
-  become: true
-  become_user: "{{ app_user }}"
-  register: app_logs
-  ignore_errors: true
-
-- name: "Affichage des logs"
-  debug:
-    msg: "{{ app_logs.stdout_lines }}"
-  when: app_logs.stdout_lines is defined
-
-- name: "Création du fichier de marquage de déploiement réussi"
-  copy:
-    content: |
-      Déploiement réussi le {{ ansible_date_time.iso8601 }}
-      Commit: {{ CI_COMMIT_SHORT_SHA }}
-      Application: {{ app_name }}
-      Port: {{ app_port | default(3000) }}
-    dest: "{{ commit_file_path }}"
-    owner: "{{ app_user }}"
-    group: "{{ app_group }}"
-    mode: '0644'
-  become: true
 
 - name: "Message de succès du déploiement"
   debug:
@@ -221,3 +146,5 @@
       - "  - pm2 logs {{ app_name }}"
       - "  - pm2 restart {{ app_name }}"
       - "  - pm2 stop {{ app_name }}"
+
+

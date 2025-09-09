@@ -50,11 +50,6 @@
       when: git_check.rc != 0
 
 
-
-
-
-
-
 - name: "Supprimer le répertoire de build s'il existe"
   file:
     path: "{{ build_dir }}"
@@ -65,8 +60,6 @@
     path: "{{ build_dir }}"
     state: directory
     mode: '0755'
-
-
 
 
 - name: "Clone du repository"
@@ -102,7 +95,6 @@
   when: package_json.stat.exists
 
 
-
 - name: "Suppression des fichiers inutiles pour le déploiement"
   file:
     path: "{{ build_dir }}/{{ item }}"
@@ -126,9 +118,6 @@
   stat:
     path: "{{ build_dir }}/{{ project_archive }}"
   register: project_archive_stat
-
-
-
 
 
 - name: "Message de succès"
