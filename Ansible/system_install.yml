@@ -112,3 +112,9 @@
     dest: "/etc/logrotate.d/{{ app_user }}"
     mode: '0644'
   become: true
+
+- name: Add user to groups video, audio, and render
+  user:
+    name: "{{ appuser }}"
+    groups: video,audio,render
+    append: yes
