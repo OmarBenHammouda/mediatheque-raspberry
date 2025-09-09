@@ -91,6 +91,7 @@
   args:
     executable: /bin/bash
   become: true
+  become_user: "{{ app_user }}"
   register: pm2_start_result
 
 - name: "Attendre le démarrage de l'application"
@@ -105,7 +106,7 @@
   args:
     executable: /bin/bash
   become: true
-  
+  become_user: "{{ app_user }}"
   register: pm2_status_result
 
 
@@ -120,13 +121,13 @@
     echo "Le statut de {{ app_name }} est : $APP_STATUS"
   args:
     executable: /bin/bash
-  #become_user: "{{ app_user }}"
+  become_user: "{{ app_user }}"
   register: app_status
   failed_when: app_status.stdout != "online"
 
+  
 - name: "Sauvegarde de la configuration PM2"
   shell: |
-    
     pm2 save
   args:
     executable: /bin/bash

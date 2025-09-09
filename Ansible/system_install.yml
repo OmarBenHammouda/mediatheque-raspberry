@@ -86,13 +86,14 @@
 
     - name: Générer service systemd  PM2
       become: yes
+      become_user: appuser
       shell: |
-        pm2 startup systemd --silent
+        pm2 startup systemd -u appuser --hp /home/appuser
         pm2 save
 
     - name: Activer et démarrer le service PM2 
       ansible.builtin.systemd:
-        name: pm2
+        name: pm2-appuser
         enabled: yes
         state: started
 
