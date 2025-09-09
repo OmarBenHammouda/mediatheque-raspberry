@@ -116,5 +116,5 @@
 - name: Add user to groups video, audio, and render
   user:
     name: "{{ app_user }}"
-    groups: video,audio ,render
+    groups: video,audio,render
     append: yes

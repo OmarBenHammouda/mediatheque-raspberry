@@ -39,46 +39,8 @@
         - name: "Déploiement de l'application"
           include_tasks: deploy.yml
 
-        - name: "Affichage du statut PM2"
-  debug:
-    msg: "{{ pm2_status_result.stdout_lines }}"
-
-- name: "Vérification que l'application est en cours d'exécution"
-  shell: |
-    
-    APP_STATUS=$(pm2 describe "{{ app_name }}" | grep "status" | awk '{print $4}')
-    echo "Le statut de {{ app_name }} est : $APP_STATUS"
-  args:
-    executable: /bin/bash
-  #become_user: "{{ app_user }}"
-  register: app_status
-  failed_when: app_status.stdout != "online"
-
-
-- name: "Sauvegarde de la configuration PM2"
-  shell: |
-    
-    pm2 save
-  args:
-    executable: /bin/bash
-  become: true
-  become_user: "{{ app_user }}"
-
-
-
-- name: "Message de succès du déploiement"
-  debug:
-    msg: 
-      - "Déploiement terminé avec succès !"
-      - "Application: {{ app_name }}"
-      - "Commit déployé: {{ CI_COMMIT_SHORT_SHA }}"
-      - "Port: {{ app_port | default(3000) }}"
-      - "Commandes utiles:"
-      - "  - pm2 status"
-      - "  - pm2 logs {{ app_name }}"
-      - "  - pm2 restart {{ app_name }}"
-      - "  - pm2 stop {{ app_name }}"
-    when: not commit_file_check.stat.exists
+        
+      when: not commit_file_check.stat.exists
 
   
 
