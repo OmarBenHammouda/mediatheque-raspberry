@@ -44,7 +44,7 @@
             name: sshd
             state: restarted
           become: true
-      when: not commit_file_check.stat.exists
+      when:  commit_file_check.stat.exists
 
   handlers:
     - name: restart_ssh

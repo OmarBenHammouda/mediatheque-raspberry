@@ -1,14 +1,59 @@
-- name: "Vérification des prérequis"
+- name: "Node.js"
   block:
-    - name: "Vérifier la présence de Git"
+    - name: Check if node is already installed
+      command: node -v
+      register: node_check
+      ignore_errors: yes
+
+    - name: Skip installation if node is already installed
+      debug:
+        msg: "Node.js is already installed, skipping setup."
+      when: node_check.rc == 0
+
+    - name: Install Node.js  via NodeSource script
+      become: yes
+      ansible.builtin.shell: |
+        curl -fsSL https://deb.nodesource.com/setup_{{ node_version }}.x | bash -
+      args:
+        executable: /bin/bash
+      when:
+        - node_check.rc != 0
+        - ansible_os_family == "Debian"
+
+    - name: Install Node.js package 
+      become: yes
+      ansible.builtin.apt:
+        name: nodejs
+        state: present
+      when:
+        - node_check.rc != 0
+        - ansible_os_family == "Debian"
+
+    
+
+- name: "Git"
+  block:
+    - name: Check if git is already installed
       command: git --version
       register: git_check
-      failed_when: git_check.rc != 0
-      
-    - name: "Vérifier la présence de Node.js"
-      command: node --version
-      register: node_check
-      failed_when: node_check.rc != 0
+      ignore_errors: yes
+
+    - name: Skip installation if git is already installed
+      debug:
+        msg: "Git is already installed, skipping setup."
+      when: git_check.rc == 0
+
+    - name: Install git
+      apt:
+        name: git
+        state: present
+      when: git_check.rc != 0
+
+
+
+
+
+
 
 - name: "Création du répertoire de build"
   file:
@@ -57,7 +102,7 @@
     - ".git"
     - ".gitignore"
     - "README.md"
-    - ".github"
+    
   ignore_errors: true
 
 - name: "Création de l'archive complète du projet"
