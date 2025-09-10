@@ -86,16 +86,17 @@
 
     - name: Générer service systemd  PM2
       become: yes
-      become_user: appuser
+      become_user: "{{ app_user }}"
       shell: |
-        pm2 startup systemd -u appuser --hp /home/appuser
+        pm2 startup systemd -u {{ app_user }} --hp /home/{{ app_user }}
         pm2 save
 
     - name: Activer et démarrer le service PM2 
       ansible.builtin.systemd:
-        name: pm2-appuser
+        name: "pm2-{{ app_user }}"
         enabled: yes
         state: started
+        daemon_reload: yes
 
 # --- Rotation des logs ---
 - name: "Configuration de la rotation des logs"
