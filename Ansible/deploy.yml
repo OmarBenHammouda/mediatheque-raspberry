@@ -1,3 +1,24 @@
+- name: "Nettoyage du répertoire d'application existant"
+  file:
+    path: "{{ LOCATION_PATH }}/{{CI_PROJECT_NAME}}"
+    state: absent
+  become: true
+
+
+- name: "Création des répertoires applicatifs"
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ app_user }}"
+    group: "{{ app_group }}"
+    mode: '0755'
+  loop:
+    - "{{ LOCATION_PATH }}/{{CI_PROJECT_NAME}}"
+    - "{{ LOCATION_PATH }}/{{CI_PROJECT_NAME}}/logs"
+    - "{{ LOCATION_PATH }}/{{CI_PROJECT_NAME}}/releases"  
+  become: true
+
+
 - name: "Copie de l'archive du projet vers le répertoire accessible"
   copy:
     src: "{{ hostvars['localhost']['build_dir'] }}/{{ project_archive }}"
@@ -116,7 +137,6 @@
 
 - name: "Vérification que l'application est en cours d'exécution"
   shell: |
-    
     APP_STATUS=$(pm2 describe "{{ app_name }}" | grep "status" | awk '{print $4}')
     echo "Le statut de {{ app_name }} est : $APP_STATUS"
   args:
@@ -125,7 +145,7 @@
   register: app_status
   failed_when: app_status.stdout != "online"
 
-  
+
 - name: "Sauvegarde de la configuration PM2"
   shell: |
     pm2 save

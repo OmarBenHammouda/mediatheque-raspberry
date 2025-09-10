@@ -16,64 +16,40 @@
   become: true
 
 
-- name: "Nettoyage du répertoire d'application existant"
-  file:
-    path: "{{ LOCATION_PATH }}/{{CI_PROJECT_NAME}}"
-    state: absent
-  become: true
 
 
-- name: "Création des répertoires applicatifs"
-  file:
-    path: "{{ item }}"
-    state: directory
-    owner: "{{ app_user }}"
-    group: "{{ app_group }}"
-    mode: '0755'
-  loop:
-    - "{{ LOCATION_PATH }}/{{CI_PROJECT_NAME}}"
-    - "{{ LOCATION_PATH }}/{{CI_PROJECT_NAME}}/logs"
-    - "{{ LOCATION_PATH }}/{{CI_PROJECT_NAME}}/releases"  
-  become: true
-
-
-- name: Installer Node.js et PM2
-  become: true
+- name: "Installer Node.js et PM2 "
   block:
-    - name: Vérifier si node est installé
-      ansible.builtin.command: node -v
-      register: node_check
-      ignore_errors: true
+    - name: Installer les dépendances
+      apt:
+        name:
+          - curl
+          - software-properties-common
+          - gnupg
+        state: present
+        update_cache: yes
 
-    - name: Extraire version actuelle de Node.js
-      set_fact:
-        node_current_version: "{{ node_check.stdout | regex_replace('^v', '') }}"
-      when: node_check.rc == 0
+    - name: Ajouter la clé GPG de NodeSource
+      apt_key:
+        url: "https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key"
+        state: present
 
     - name: Ajouter le dépôt NodeSource
-      ansible.builtin.shell: |
-         curl -fsSL https://deb.nodesource.com/setup_{{ node_version }} | bash -
-      args:
-        executable: /bin/bash
-      when: node_check.rc != 0 or
-       (node_current_version is defined and
-        (node_current_version.split('.')[0] != (node_version.split('.')[0])))
+      apt_repository:
+        repo: "deb https://deb.nodesource.com/node_{{ node_version }} nodistro main"
+        state: present
+        filename: nodesource
 
-   
-    - name: Installer Node.js
-      ansible.builtin.apt:
+    - name: Installer Node.js et npm
+      apt:
         name: nodejs
         state: present
         update_cache: yes
-      when: node_check.rc != 0 or
-       (node_current_version is defined and 
-       (node_current_version.split('.')[0] != (node_version.split('.')[0])))
 
-
-    - name: Vérifier si le binaire "node" existe
-      ansible.builtin.stat:
-        path: /usr/bin/node
-      register: node_bin
+    - name: Installer build-essential
+      apt:
+        name: build-essential
+        state: present
 
     
 

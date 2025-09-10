@@ -1,53 +1,41 @@
-- name: "Node.js"
+- name: "Installer Node.js"
   block:
-    - name: Check if node is already installed
-      command: node -v
-      register: node_check
-      ignore_errors: yes
+    - name: Installer les dépendances
+      apt:
+        name:
+          - curl
+          - software-properties-common
+          - gnupg
+        state: present
+        update_cache: yes
 
-    - name: Skip installation if node is already installed
-      debug:
-        msg: "Node.js is already installed, skipping setup."
-      when: node_check.rc == 0
+    - name: Ajouter la clé GPG de NodeSource
+      apt_key:
+        url: "https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key"
+        state: present
 
-    - name: Install Node.js  via NodeSource script
-      become: yes
-      ansible.builtin.shell: |
-        curl -fsSL https://deb.nodesource.com/setup_{{ node_version }}.x | bash -
-      args:
-        executable: /bin/bash
-      when:
-        - node_check.rc != 0
-        - ansible_os_family == "Debian"
+    - name: Ajouter le dépôt NodeSource
+      apt_repository:
+        repo: "deb https://deb.nodesource.com/node_{{ node_version }} nodistro main"
+        state: present
+        filename: nodesource
 
-    - name: Install Node.js package 
-      become: yes
-      ansible.builtin.apt:
+    - name: Installer Node.js et npm
+      apt:
         name: nodejs
         state: present
-      when:
-        - node_check.rc != 0
-        - ansible_os_family == "Debian"
+        update_cache: yes
 
+    - name: Installer build-essential
+      apt:
+        name: build-essential
+        state: present
     
 
-- name: "Git"
-  block:
-    - name: Check if git is already installed
-      command: git --version
-      register: git_check
-      ignore_errors: yes
-
-    - name: Skip installation if git is already installed
-      debug:
-        msg: "Git is already installed, skipping setup."
-      when: git_check.rc == 0
-
-    - name: Install git
-      apt:
-        name: git
-        state: present
-      when: git_check.rc != 0
+- name: Ensure Git is installed 
+  ansible.builtin.package:
+    name: git
+    state: present
 
 
 - name: "Supprimer le répertoire de build s'il existe"
