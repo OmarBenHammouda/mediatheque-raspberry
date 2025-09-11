@@ -9,6 +9,7 @@
         state: present
         update_cache: yes
 
+
     - name: Ajouter la clé GPG de NodeSource
       apt_key:
         url: "https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key"
@@ -43,6 +44,7 @@
     path: "{{ build_dir }}"
     state: absent
 
+
 - name: "Créer un répertoire de build vide"
   file:
     path: "{{ build_dir }}"
@@ -63,11 +65,13 @@
   debug:
     msg: "Commit utilisé: {{ CI_COMMIT_SHORT_SHA}} ({{ git_clone_result.after }})"
 
+
 - name: "Création d'un fichier vide avec le nom du commit"
   file:
     path: "{{ build_dir }}/.{{ CI_COMMIT_SHORT_SHA}}."
     state: touch
     mode: '0644'
+
 
 - name: "Vérification du fichier package.json"
   stat:
@@ -90,9 +94,9 @@
   loop:
     - ".git"
     - ".gitignore"
-    - "README.md"
-    
+    - "README.md" 
   ignore_errors: true
+
 
 - name: "Création de l'archive complète du projet"
   archive:
@@ -101,6 +105,7 @@
     format: gz
     exclude_path:
       - "{{ build_dir }}/{{ project_archive }}"  
+
 
 - name: "Vérification de l'archive créée"
   stat:
@@ -112,6 +117,7 @@
   debug:
     msg: "✅ Archive du projet créée : {{ project_archive_stat.stat.path }}"
   when: project_archive_stat.stat.exists
+
 
 - name: "Message d'erreur si archive absente"
   fail:

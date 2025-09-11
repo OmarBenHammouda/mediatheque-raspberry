@@ -5,6 +5,7 @@
     state: present
   become: true
 
+
 - name: "Création de l'utilisateur applicatif"
   user:
     name: "{{ app_user }}"
@@ -14,8 +15,6 @@
     create_home: true
     state: present
   become: true
-
-
 
 
 - name: "Installer Node.js et PM2 "
@@ -51,14 +50,11 @@
         name: build-essential
         state: present
 
-    
-
     - name: Installer PM2 globalement
       community.general.npm:
         name: pm2
         global: yes
         state: present
-
 
     - name: Générer service systemd  PM2
       become: yes
@@ -90,6 +86,7 @@
     dest: "/etc/logrotate.d/{{ app_user }}"
     mode: '0644'
   become: true
+
 
 - name: Add user to groups video, audio, and render
   user:

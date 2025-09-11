@@ -28,6 +28,7 @@
     mode: '0644'
   become: true
 
+
 - name: "Copie du fichier CI_COMMIT_SHORT_SHA"
   copy:
     src: "{{ hostvars['localhost']['build_dir'] }}/.{{ CI_COMMIT_SHORT_SHA }}."
@@ -36,7 +37,6 @@
     group: "{{ app_group }}"
     mode: '0644'
   become: true
-
 
 
 - name: "Re-création du répertoire d'application"
@@ -48,6 +48,7 @@
     mode: '0755'
   become: true
 
+
 - name: "Extraction de l'archive dans le répertoire d'application"
   unarchive:
     src: "{{ LOCATION_PATH }}/{{CI_PROJECT_NAME}}/releases/{{ project_archive }}"
@@ -57,13 +58,12 @@
     remote_src: true
   become: true
 
+
 - name: "Suppression de l'archive après extraction"
   file:
     path: "{{ LOCATION_PATH }}/{{CI_PROJECT_NAME}}/releases"
     state: absent
   become: true
-
-
 
 
 - name: "Arrêt des processus PM2 existants"
@@ -73,7 +73,6 @@
   become: true
   become_user: "{{ app_user }}"
   ignore_errors: true
-
 
 
 - name: "Création du fichier de configuration PM2"
@@ -115,6 +114,7 @@
   become_user: "{{ app_user }}"
   register: pm2_start_result
 
+
 - name: "Attendre le démarrage de l'application"
   wait_for:
     timeout: 30
@@ -134,6 +134,7 @@
 - name: "Affichage du statut PM2"
   debug:
     msg: "{{ pm2_status_result.stdout_lines }}"
+
 
 - name: "Vérification que l'application est en cours d'exécution"
   shell: |
