@@ -25,6 +25,9 @@
           - curl
           - software-properties-common
           - gnupg
+          - mc
+          - netcat-openbsd
+          - cec-utils
         state: present
         update_cache: yes
 
