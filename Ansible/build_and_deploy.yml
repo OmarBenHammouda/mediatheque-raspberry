@@ -41,6 +41,13 @@
         - name: "Déploiement de l'application"
           include_tasks: deploy.yml
       when: not commit_file_check.stat.exists
+  
+  handlers:
+    - name: reload systemd
+      ansible.builtin.systemd:
+        daemon_reload: yes
+      become: true
+  
 
   
 - name: "Cleanup"

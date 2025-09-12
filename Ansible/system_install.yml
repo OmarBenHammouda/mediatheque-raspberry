@@ -73,6 +73,50 @@
         state: started
         daemon_reload: yes
 
+
+- name: "Créer le service systemd pour Raspberry Player"
+  copy:
+    content: |
+      [Unit]
+      Description=Raspberry Player - Médiathèque Digital Signage
+      After=network.target
+
+      [Service]
+      Type=simple
+      User={{ app_user }}
+      WorkingDirectory={{ LOCATION_PATH }}/{{ CI_PROJECT_NAME }}
+      ExecStartPre=/bin/sh -c 'sudo cp /home/admin/.Xauthority {{ LOCATION_PATH }}/.Xauthority && sudo chown {{ app_user }}:{{ app_group }} {{ LOCATION_PATH }}/.Xauthority'
+      ExecStart=/usr/bin/npm start --prefix {{ LOCATION_PATH }}/{{ CI_PROJECT_NAME }}
+      Restart=always
+      RestartSec=10
+      StandardOutput=journal
+      StandardError=journal
+      Environment=NODE_ENV=production
+      Environment=DISPLAY=:0
+      Environment=XDG_RUNTIME_DIR=/run/user/1001
+
+      # Redémarrage automatique en cas d'échec
+      RestartForceExitStatus=1
+      RestartPreventExitStatus=0
+
+      [Install]
+      WantedBy=graphical.target
+    dest: "/etc/systemd/system/raspberry-player.service"
+    mode: '0644'
+    owner: root
+    group: root
+  become: true
+  notify: reload systemd
+
+- name: "Recharger systemd et activer le service Raspberry Player"
+  ansible.builtin.systemd:
+    name: raspberry-player
+    enabled: yes
+    daemon_reload: yes
+    state: started
+  become: true
+
+
 # --- Rotation des logs ---
 - name: "Configuration de la rotation des logs"
   copy:
@@ -96,3 +140,5 @@
     name: "{{ app_user }}"
     groups: video,audio,render
     append: yes
+
+
