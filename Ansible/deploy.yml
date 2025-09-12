@@ -4,7 +4,6 @@
     state: absent
   become: true
 
-
 - name: "Création des répertoires applicatifs"
   file:
     path: "{{ item }}"
@@ -18,7 +17,6 @@
     - "{{ LOCATION_PATH }}/{{CI_PROJECT_NAME}}/releases"  
   become: true
 
-
 - name: "Copie de l'archive du projet vers le répertoire accessible"
   copy:
     src: "{{ hostvars['localhost']['build_dir'] }}/{{ project_archive }}"
@@ -27,7 +25,6 @@
     group: "{{ app_group }}"
     mode: '0644'
   become: true
-
 
 - name: "Copie du fichier CI_COMMIT_SHORT_SHA"
   copy:
@@ -38,7 +35,6 @@
     mode: '0644'
   become: true
 
-
 - name: "Re-création du répertoire d'application"
   file:
     path: "{{ LOCATION_PATH }}/{{CI_PROJECT_NAME}}"
@@ -47,7 +43,6 @@
     group: "{{ app_group }}"
     mode: '0755'
   become: true
-
 
 - name: "Extraction de l'archive dans le répertoire d'application"
   unarchive:
@@ -58,115 +53,134 @@
     remote_src: true
   become: true
 
-
 - name: "Suppression de l'archive après extraction"
   file:
     path: "{{ LOCATION_PATH }}/{{CI_PROJECT_NAME}}/releases"
     state: absent
   become: true
 
-
-- name: "Arrêt des processus PM2 existants"
-  shell: |
-    pm2 delete {{ app_name }} || true
-    pm2 kill || true
-  become: true
-  become_user: "{{ app_user }}"
-  ignore_errors: true
-
-
-- name: "Création du fichier de configuration PM2"
+- name: "Créer le service systemd pour Raspberry Player"
   copy:
     content: |
-      {
-        "name": "{{ app_name }}",
-        "script": "{{ main_file | basename }}",
-        "cwd": "{{ LOCATION_PATH }}/{{CI_PROJECT_NAME}}/app",
-        "instances": 1,
-        "autorestart": true,
-        "watch": false,
-        "max_memory_restart": "1G",
-        "env": {
-          "NODE_ENV": "production",
-          "PORT": "{{ app_port | default(3000) }}"
-        },
-        "log_file": "{{ LOCATION_PATH }}/{{CI_PROJECT_NAME}}/logs/{{ app_name }}.log",
-        "out_file": "{{ LOCATION_PATH }}/{{CI_PROJECT_NAME}}/logs/{{ app_name }}-out.log",
-        "error_file": "{{ LOCATION_PATH }}/{{CI_PROJECT_NAME}}/logs/{{ app_name }}-error.log",
-        "log_date_format": "YYYY-MM-DD HH:mm:ss Z",
-        "merge_logs": true,
-        "kill_timeout": 5000
-      }
-    dest: "{{ LOCATION_PATH }}/{{CI_PROJECT_NAME}}/ecosystem.config.json"
-    owner: "{{ app_user }}"
-    group: "{{ app_group }}"
+      [Unit]
+      Description=Raspberry Player - Médiathèque Digital Signage
+      After=network.target
+
+      [Service]
+      Type=simple
+      User={{ app_user }}
+      WorkingDirectory={{ LOCATION_PATH }}/{{ CI_PROJECT_NAME }}
+      ExecStartPre=/bin/sh -c 'sudo cp /home/admin/.Xauthority {{ LOCATION_PATH }}/.Xauthority && sudo chown {{ app_user }}:{{ app_group }} {{ LOCATION_PATH }}/.Xauthority'
+      ExecStart=/usr/bin/npm start --prefix {{ LOCATION_PATH }}/{{ CI_PROJECT_NAME }}
+      Restart=always
+      RestartSec=10
+      StandardOutput=journal
+      StandardError=journal
+      Environment=NODE_ENV=production
+      Environment=DISPLAY=:0
+      Environment=XDG_RUNTIME_DIR=/run/user/1001
+
+      # Redémarrage automatique en cas d'échec
+      RestartForceExitStatus=1
+      RestartPreventExitStatus=0
+
+      [Install]
+      WantedBy=graphical.target
+    dest: "/etc/systemd/system/raspberry-player.service"
     mode: '0644'
+    owner: root
+    group: root
+  become: true
+  notify: reload systemd
+
+- name: "Recharger systemd et activer le service Raspberry Player"
+  ansible.builtin.systemd:
+    name: raspberry-player
+    enabled: yes
+    daemon_reload: yes
+    state: started
   become: true
 
-
-- name: "Démarrage de l'application avec PM2"
-  shell: |
-    cd {{ LOCATION_PATH }}/{{CI_PROJECT_NAME}}
-    pm2 start ecosystem.config.json
-  args:
-    executable: /bin/bash
-  become: true
-  become_user: "{{ app_user }}"
-  register: pm2_start_result
-
-
-- name: "Attendre le démarrage de l'application"
-  wait_for:
-    timeout: 30
-  delegate_to: localhost
-
-
-- name: "Vérification du statut PM2"
-  shell: |
-    pm2 status {{ app_name }}
-  args:
-    executable: /bin/bash
-  become: true
-  become_user: "{{ app_user }}"
-  register: pm2_status_result
-
-
-- name: "Affichage du statut PM2"
-  debug:
-    msg: "{{ pm2_status_result.stdout_lines }}"
-
-
-- name: "Vérification que l'application est en cours d'exécution"
-  shell: |
-    APP_STATUS=$(pm2 describe "{{ app_name }}" | grep "status" | awk '{print $4}')
-    echo "Le statut de {{ app_name }} est : $APP_STATUS"
-  args:
-    executable: /bin/bash
-  become_user: "{{ app_user }}"
-  register: app_status
-  failed_when: app_status.stdout != "online"
-
-
-- name: "Sauvegarde de la configuration PM2"
-  shell: |
-    pm2 save
-  args:
-    executable: /bin/bash
-  become: true
-  become_user: "{{ app_user }}"
-
-
-- name: "Message de succès du déploiement"
-  debug:
-    msg: 
-      - "Déploiement terminé avec succès !"
-      - "Application: {{ app_name }}"
-      - "Commit déployé: {{ CI_COMMIT_SHORT_SHA }}"
-      - "Port: {{ app_port | default(3000) }}"
-      - "Commandes utiles:"
-      - "  - pm2 status"
-      - "  - pm2 logs {{ app_name }}"
-      - "  - pm2 restart {{ app_name }}"
-      - "  - pm2 stop {{ app_name }}"
-
-
+# --- Tâches PM2 (désactivées pour l’instant) ---
+# - name: "Arrêt des processus PM2 existants"
+#   shell: |
+#     pm2 delete {{ app_name }} || true
+#     pm2 kill || true
+#   become: true
+#   become_user: "{{ app_user }}"
+#   ignore_errors: true
+#
+# - name: "Création du fichier de configuration PM2"
+#   copy:
+#     content: |
+#       {
+#         "name": "{{ app_name }}",
+#         "script": "{{ main_file | basename }}",
+#         "cwd": "{{ LOCATION_PATH }}/{{CI_PROJECT_NAME}}/app",
+#         "instances": 1,
+#         "autorestart": true,
+#         "watch": false,
+#         "max_memory_restart": "1G",
+#         "env": {
+#           "NODE_ENV": "production",
+#           "PORT": "{{ app_port | default(3000) }}"
+#         },
+#         "log_file": "{{ LOCATION_PATH }}/{{CI_PROJECT_NAME}}/logs/{{ app_name }}.log",
+#         "out_file": "{{ LOCATION_PATH }}/{{CI_PROJECT_NAME}}/logs/{{ app_name }}-out.log",
+#         "error_file": "{{ LOCATION_PATH }}/{{CI_PROJECT_NAME}}/logs/{{ app_name }}-error.log",
+#         "log_date_format": "YYYY-MM-DD HH:mm:ss Z",
+#         "merge_logs": true,
+#         "kill_timeout": 5000
+#       }
+#     dest: "{{ LOCATION_PATH }}/{{CI_PROJECT_NAME}}/ecosystem.config.json"
+#     owner: "{{ app_user }}"
+#     group: "{{ app_group }}"
+#     mode: '0644'
+#   become: true
+#
+# - name: "Démarrage de l'application avec PM2"
+#   shell: |
+#     cd {{ LOCATION_PATH }}/{{CI_PROJECT_NAME}}
+#     pm2 start ecosystem.config.json
+#   args:
+#     executable: /bin/bash
+#   become: true
+#   become_user: "{{ app_user }}"
+#   register: pm2_start_result
+#
+# - name: "Attendre le démarrage de l'application"
+#   wait_for:
+#     timeout: 30
+#   delegate_to: localhost
+#
+# - name: "Vérification du statut PM2"
+#   shell: |
+#     pm2 status {{ app_name }}
+#   args:
+#     executable: /bin/bash
+#   become: true
+#   become_user: "{{ app_user }}"
+#   register: pm2_status_result
+#
+# - name: "Affichage du statut PM2"
+#   debug:
+#     msg: "{{ pm2_status_result.stdout_lines }}"
+#
+# - name: "Vérification que l'application est en cours d'exécution"
+#   shell: |
+#     APP_STATUS=$(pm2 describe "{{ app_name }}" | grep "status" | awk '{print $4}')
+#     echo "Le statut de {{ app_name }} est : $APP_STATUS"
+#   args:
+#     executable: /bin/bash
+#   become_user: "{{ app_user }}"
+#   register: app_status
+#   failed_when: app_status.stdout != "online"
+#
+# - name: "Sauvegarde de la configuration PM2"
+#   shell: |
+#     pm2 save
+#   args:
+#     executable: /bin/bash
+#   become: true
+#   become_user: "{{ app_user }}"
+# --- Fin des tâches PM2 ---
