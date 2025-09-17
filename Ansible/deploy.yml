@@ -8,8 +8,8 @@
   file:
     path: "{{ item }}"
     state: directory
-    owner: "{{ app_user }}"
-    group: "{{ app_group }}"
+    owner: "admin"
+    group: "admin"
     mode: '0755'
   loop:
     - "{{ LOCATION_PATH }}/{{CI_PROJECT_NAME}}"
@@ -21,8 +21,8 @@
   copy:
     src: "{{ hostvars['localhost']['build_dir'] }}/{{ project_archive }}"
     dest: "{{ LOCATION_PATH }}/{{CI_PROJECT_NAME}}/releases/{{ project_archive }}"
-    owner: "{{ app_user }}"
-    group: "{{ app_group }}"
+    owner: "admin"
+    group: "admin"
     mode: '0644'
   become: true
 
@@ -30,8 +30,8 @@
   copy:
     src: "{{ hostvars['localhost']['build_dir'] }}/.{{ CI_COMMIT_SHORT_SHA }}."
     dest: "{{ LOCATION_PATH }}/{{CI_PROJECT_NAME}}/"
-    owner: "{{ app_user }}"
-    group: "{{ app_group }}"
+    owner: "admin"
+    group: "admin"
     mode: '0644'
   become: true
 
@@ -39,8 +39,8 @@
   file:
     path: "{{ LOCATION_PATH }}/{{CI_PROJECT_NAME}}"
     state: directory
-    owner: "{{ app_user }}"
-    group: "{{ app_group }}"
+    owner: "admin"
+    group: "admin"
     mode: '0755'
   become: true
 
@@ -48,8 +48,8 @@
   unarchive:
     src: "{{ LOCATION_PATH }}/{{CI_PROJECT_NAME}}/releases/{{ project_archive }}"
     dest: "{{ LOCATION_PATH }}/{{CI_PROJECT_NAME}}"
-    owner: "{{ app_user }}"
-    group: "{{ app_group }}"
+    owner: "admin"
+    group: "admin"
     remote_src: true
   become: true
 
@@ -64,13 +64,13 @@
     content: |
       [Unit]
       Description=Raspberry Player - Médiathèque Digital Signage
-      After=network.target
+      After=network.target graphical-session.target
 
       [Service]
       Type=simple
-      User={{ app_user }}
+      User=admin
+      Group=admin
       WorkingDirectory={{ LOCATION_PATH }}/{{ CI_PROJECT_NAME }}
-      ExecStartPre=/bin/sh -c 'sudo cp /home/admin/.Xauthority {{ LOCATION_PATH }}/.Xauthority && sudo chown {{ app_user }}:{{ app_group }} {{ LOCATION_PATH }}/.Xauthority'
       ExecStart=/usr/bin/npm start --prefix {{ LOCATION_PATH }}/{{ CI_PROJECT_NAME }}
       Restart=always
       RestartSec=10
@@ -78,7 +78,8 @@
       StandardError=journal
       Environment=NODE_ENV=production
       Environment=DISPLAY=:0
-      Environment=XDG_RUNTIME_DIR=/run/user/1001
+      Environment=HOME=/home/admin
+      Environment=XDG_RUNTIME_DIR=/run/user/1000
 
       # Redémarrage automatique en cas d'échec
       RestartForceExitStatus=1
@@ -101,13 +102,13 @@
     state: started
   become: true
 
-# --- Tâches PM2 (désactivées pour l’instant) ---
+# --- Tâches PM2 (optionnelles - version admin) ---
 # - name: "Arrêt des processus PM2 existants"
 #   shell: |
 #     pm2 delete {{ app_name }} || true
 #     pm2 kill || true
 #   become: true
-#   become_user: "{{ app_user }}"
+#   become_user: "admin"
 #   ignore_errors: true
 #
 # - name: "Création du fichier de configuration PM2"
@@ -133,8 +134,8 @@
 #         "kill_timeout": 5000
 #       }
 #     dest: "{{ LOCATION_PATH }}/{{CI_PROJECT_NAME}}/ecosystem.config.json"
-#     owner: "{{ app_user }}"
-#     group: "{{ app_group }}"
+#     owner: "admin"
+#     group: "admin"
 #     mode: '0644'
 #   become: true
 #
@@ -145,7 +146,7 @@
 #   args:
 #     executable: /bin/bash
 #   become: true
-#   become_user: "{{ app_user }}"
+#   become_user: "admin"
 #   register: pm2_start_result
 #
 # - name: "Attendre le démarrage de l'application"
@@ -159,7 +160,7 @@
 #   args:
 #     executable: /bin/bash
 #   become: true
-#   become_user: "{{ app_user }}"
+#   become_user: "admin"
 #   register: pm2_status_result
 #
 # - name: "Affichage du statut PM2"
@@ -172,7 +173,7 @@
 #     echo "Le statut de {{ app_name }} est : $APP_STATUS"
 #   args:
 #     executable: /bin/bash
-#   become_user: "{{ app_user }}"
+#   become_user: "admin"
 #   register: app_status
 #   failed_when: app_status.stdout != "online"
 #
@@ -182,5 +183,5 @@
 #   args:
 #     executable: /bin/bash
 #   become: true
-#   become_user: "{{ app_user }}"
+#   become_user: "admin"
 # --- Fin des tâches PM2 ---
