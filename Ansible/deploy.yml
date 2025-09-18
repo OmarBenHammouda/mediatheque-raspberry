@@ -6,18 +6,27 @@
   ignore_errors: true
 
 
-- name: "Nettoyage du répertoire d'application existant"
-  file:
-    path: "{{ LOCATION_PATH }}/{{CI_PROJECT_NAME}}"
-    state: absent
+- name: Lister les fichiers dans le répertoire 
+  ansible.builtin.find:
+    paths: "{{ LOCATION_PATH }}/{{ CI_PROJECT_NAME }}"
+    file_type: any
+  register: files_to_delete
+
+- name: Supprimer le contenu du répertoire sauf files et data
   become: true
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: absent
+  loop: "{{ files_to_delete.files }}"
+  when: "'files' not in item.path and 'data' not in item.path"
+
 
 - name: "Création des répertoires applicatifs"
   file:
     path: "{{ item }}"
     state: directory
-    owner: "admin"
-    group: "admin"
+    owner: "{{ app_user }}"
+    group: "{{ app_user }}"
     mode: '0755'
   loop:
     - "{{ LOCATION_PATH }}/{{CI_PROJECT_NAME}}"
@@ -29,8 +38,8 @@
   copy:
     src: "{{ hostvars['localhost']['build_dir'] }}/{{ project_archive }}"
     dest: "{{ LOCATION_PATH }}/{{CI_PROJECT_NAME}}/releases/{{ project_archive }}"
-    owner: "admin"
-    group: "admin"
+    owner: "{{ app_user }}"
+    group: "{{ app_user }}"
     mode: '0644'
   become: true
 
@@ -38,8 +47,8 @@
   copy:
     src: "{{ hostvars['localhost']['build_dir'] }}/.{{ CI_COMMIT_SHORT_SHA }}."
     dest: "{{ LOCATION_PATH }}/{{CI_PROJECT_NAME}}/"
-    owner: "admin"
-    group: "admin"
+    owner: "{{ app_user }}"
+    group: "{{ app_user }}"
     mode: '0644'
   become: true
 
@@ -47,8 +56,8 @@
   file:
     path: "{{ LOCATION_PATH }}/{{CI_PROJECT_NAME}}"
     state: directory
-    owner: "admin"
-    group: "admin"
+    owner: "{{ app_user }}"
+    group: "{{ app_user }}"
     mode: '0755'
   become: true
 
@@ -56,8 +65,8 @@
   unarchive:
     src: "{{ LOCATION_PATH }}/{{CI_PROJECT_NAME}}/releases/{{ project_archive }}"
     dest: "{{ LOCATION_PATH }}/{{CI_PROJECT_NAME}}"
-    owner: "admin"
-    group: "admin"
+    owner: "{{ app_user }}"
+    group: "{{ app_user }}"
     remote_src: true
   become: true
 
@@ -66,6 +75,10 @@
     path: "{{ LOCATION_PATH }}/{{CI_PROJECT_NAME}}/releases"
     state: absent
   become: true
+
+- name: Récupérer UID de appuser via id
+  command: id -u appuser
+  register: appuser_uid
 
 - name: "Créer le service systemd pour Raspberry Player"
   copy:
@@ -76,8 +89,8 @@
 
       [Service]
       Type=simple
-      User=admin
-      Group=admin
+      User={{ app_user }}
+      Group={{ app_group }}
       WorkingDirectory={{ LOCATION_PATH }}/{{ CI_PROJECT_NAME }}
       ExecStart=/usr/bin/npm start --prefix {{ LOCATION_PATH }}/{{ CI_PROJECT_NAME }}
       Restart=always
@@ -86,8 +99,8 @@
       StandardError=journal
       Environment=NODE_ENV=production
       Environment=DISPLAY=:0
-      Environment=HOME=/home/admin
-      Environment=XDG_RUNTIME_DIR=/run/user/1000
+      Environment=HOME={{ LOCATION_PATH }}
+      Environment=XDG_RUNTIME_DIR=/run/user/{{ appuser_uid.stdout }}
 
       # Redémarrage automatique en cas d'échec
       RestartForceExitStatus=1

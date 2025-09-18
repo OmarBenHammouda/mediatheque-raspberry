@@ -74,6 +74,6 @@
           notifempty
           
       }
-    dest: "/etc/logrotate.d/admin"
+    dest: "/etc/logrotate.d/{{ app_user }}"
     mode: '0644'
   become: true

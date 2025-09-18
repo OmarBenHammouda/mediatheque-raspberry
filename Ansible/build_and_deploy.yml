@@ -40,7 +40,7 @@
 
         - name: "Déploiement de l'application"
           include_tasks: deploy.yml
-      when: not commit_file_check.stat.exists
+      when: not commit_file_check.stat.exists or force | default(false) | bool
   
   handlers:
     - name: reload systemd
