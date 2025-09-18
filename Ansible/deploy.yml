@@ -1,3 +1,11 @@
+- name: Arrêter raspberry-player 
+  become: true
+  ansible.builtin.systemd:
+    name: raspberry-player
+    state: stopped
+  ignore_errors: true
+
+
 - name: "Nettoyage du répertoire d'application existant"
   file:
     path: "{{ LOCATION_PATH }}/{{CI_PROJECT_NAME}}"
