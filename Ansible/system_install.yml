@@ -78,20 +78,20 @@
     mode: '0644'
   become: true
 
-- name: Créer le dossier .ssh s'il n'existe pas
+- name: "Créer le dossier SSH s'il n'existe pas"
   file:
     path: "{{ LOCATION_PATH }}/.ssh"
     state: directory
     mode: '0700'
     owner: "{{ app_user }}"
-    group: "{{ app_user }}"
+    group: "{{ app_group }}"
 
 - name: "Récupérer la variable AUTHORIZED_KEYS "
   uri:
-    url: "{{ REGISTRY_HOST }}/api/v4/projects/{{ project_id }}/variables/AUTHORIZED_KEYS"
+    url: "https://{{ REGISTRY_HOST }}/api/v4/projects/{{ project_id }}/variables/AUTHORIZED_KEYS"
     method: GET
     headers:
-      PRIVATE-TOKEN: "TOKEN"
+      PRIVATE-TOKEN: "{{ Env_token }}"
     return_content: yes
   register: gitlab_var
 
