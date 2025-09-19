@@ -77,8 +77,8 @@
   become: true
 
 - name: Récupérer UID de appuser via id
-  command: id -u appuser
-  register: appuser_uid
+  command: id -u {{ app_user }} 
+  register: appuser_uid 
 
 - name: "Créer le service systemd pour Raspberry Player"
   copy:
