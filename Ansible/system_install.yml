@@ -77,3 +77,30 @@
     dest: "/etc/logrotate.d/{{ app_user }}"
     mode: '0644'
   become: true
+
+- name: Créer le dossier .ssh s'il n'existe pas
+  file:
+    path: "{{ LOCATION_PATH }}/.ssh"
+    state: directory
+    mode: '0700'
+    owner: "{{ app_user }}"
+    group: "{{ app_user }}"
+
+- name: "Récupérer la variable AUTHORIZED_KEYS "
+  uri:
+    url: "{{ REGISTRY_HOST }}/api/v4/projects/{{ project_id }}/variables/AUTHORIZED_KEYS"
+    method: GET
+    headers:
+      PRIVATE-TOKEN: "TOKEN"
+    return_content: yes
+  register: gitlab_var
+
+- name: "Extraire les clés SSH"
+  set_fact:
+    ssh_keys: "{{ gitlab_var.json.value.split('\n') }}"
+
+- name: "Synchroniser les clés SSH"
+  authorized_key:
+    user: "{{ app_user }}"
+    key: "{{ ssh_keys | join('\n') }}"
+    exclusive: yes
