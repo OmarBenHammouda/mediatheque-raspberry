@@ -34,32 +34,6 @@
         name: build-essential
         state: present
 
-    # --- Partie PM2 (optionnelle) ---
-    # - name: Installer PM2 globalement
-    #   community.general.npm:
-    #     name: pm2
-    #     global: yes
-    #     state: present
-    #
-    # - name: Générer service systemd PM2
-    #   become: yes
-    #   shell: |
-    #     env PATH=$PATH:/usr/bin pm2 startup systemd -u admin --hp /home/admin
-    #
-    # - name: Sauvegarder la configuration PM2 pour admin
-    #   become: yes
-    #   become_user: "admin"
-    #   shell: |
-    #     pm2 save
-    #
-    # - name: Activer et démarrer le service PM2
-    #   ansible.builtin.systemd:
-    #     name: "pm2-admin"
-    #     enabled: yes
-    #     state: started
-    #     daemon_reload: yes
-    #   become: true
-    # --- Fin PM2 ---
 
 # --- Rotation des logs ---
 - name: Créer le groupe applicatif
