@@ -62,6 +62,20 @@
     # --- Fin PM2 ---
 
 # --- Rotation des logs ---
+- name: Créer le groupe applicatif
+  ansible.builtin.group:
+    name: "{{ app_group }}"
+    state: present
+
+- name: Créer l'utilisateur applicatif
+  ansible.builtin.user:
+    name: "{{ app_user }}"
+    group: "{{ app_group }}"
+    home: "{{ home_path }}"
+    shell: "{{ shell }}"
+    create_home: yes
+    state: present
+
 - name: "Configuration de la rotation des logs"
   copy:
     content: |
