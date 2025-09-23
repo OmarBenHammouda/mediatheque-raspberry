@@ -26,11 +26,13 @@
         name: nodejs
         state: present
         update_cache: yes
+      become: true
 
     - name: Installer build-essential
       apt:
         name: build-essential
         state: present
+      become: true
 
     - name: Ensure Git is installed 
       ansible.builtin.package:
