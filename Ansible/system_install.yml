@@ -45,7 +45,7 @@
   ansible.builtin.user:
     name: "{{ app_user }}"
     group: "{{ app_group }}"
-    home: "{{ home_path }}"
+    home: "{{ LOCATION_PATH }}"
     shell: "{{ shell }}"
     create_home: yes
     state: present
