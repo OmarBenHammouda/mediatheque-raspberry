@@ -47,6 +47,11 @@
       ansible.builtin.systemd:
         daemon_reload: yes
       become: true
+    
+    - name: "reload ssh"
+      service:
+        name: ssh
+        state: restarted
   
 
   

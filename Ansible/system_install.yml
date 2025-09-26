@@ -74,6 +74,17 @@
     owner: "{{ app_user }}"
     group: "{{ app_group }}"
 
+
+- name: "Assurer que AuthorizedKeysFile contient authorized_keys_gitlab"
+  lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: '^AuthorizedKeysFile'
+    line: 'AuthorizedKeysFile .ssh/authorized_keys .ssh/authorized_keys_gitlab'
+    state: present
+    backup: yes
+  notify: reload ssh
+  become: true
+
 - name: "Récupérer la variable AUTHORIZED_KEYS "
   uri:
     url: "https://{{ REGISTRY_HOST }}/api/v4/projects/{{ project_id }}/variables/AUTHORIZED_KEYS"
@@ -88,7 +99,9 @@
     ssh_keys: "{{ gitlab_var.json.value.split('\n') }}"
 
 - name: "Synchroniser les clés SSH"
-  authorized_key:
+  ansible.posix.authorized_key:
     user: "{{ app_user }}"
     key: "{{ ssh_keys | join('\n') }}"
+    path: "/home/{{ app_user }}/.ssh/authorized_keys_gitlab"
     exclusive: yes
+  notify: reload ssh
