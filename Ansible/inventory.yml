@@ -8,5 +8,5 @@ all:
     node_server:
       hosts:
         raspberry1:
-          ansible_host: 192.168.1.39
-          ansible_user: admin
+          localhost:
+          ansible_connection: local

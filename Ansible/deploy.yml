@@ -20,6 +20,13 @@
   loop: "{{ files_to_delete.files }}"
   when: "'files' not in item.path and 'data' not in item.path"
 
+- name: Supprimer tous les fichiers .commitId. ancien
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: absent
+  loop: "{{ lookup('ansible.builtin.fileglob', LOCATION_PATH ~ '/' ~ CI_PROJECT_NAME ~ '/.*.', wantlist=True) }}"
+  become: true
+  become_user: admin
 
 - name: "Création des répertoires applicatifs"
   file:
