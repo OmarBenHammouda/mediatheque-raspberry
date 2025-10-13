@@ -1,5 +1,19 @@
 - name: "Installer Node.js"
   block:
+    - name: Nettoyer les anciens dépôts NodeSource
+      shell: |
+        rm -f /etc/apt/sources.list.d/nodesource.list
+        rm -f /etc/apt/sources.list.d/nodesource*.list
+        rm -f /usr/share/keyrings/nodesource.gpg
+      args:
+        executable: /bin/bash
+      become: true
+
+    - name: Mettre à jour le cache APT après nettoyage
+      apt:
+        update_cache: yes
+      become: true
+
     - name: Installer les dépendances
       apt:
         name:
