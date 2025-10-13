@@ -4,7 +4,7 @@
       apt:
         name:
           - curl
-          - software-properties-common # a supprimer ca causer des erreur et il n'est pas necaissaire 
+          
           - gnupg
         state: present
         update_cache: yes
