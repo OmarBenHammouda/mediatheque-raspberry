@@ -13,7 +13,7 @@
 
     - name: Définir le chemin NVM 
       set_fact:
-        nvm_dir: "home/admin/.nvm"
+        nvm_dir: "/home/admin/.nvm"
 
     - name: Installer NVM  et  Node.js
       shell: |
