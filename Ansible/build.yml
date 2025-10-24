@@ -13,7 +13,7 @@
 
     - name: Définir le chemin NVM 
       set_fact:
-        nvm_dir: "/admin/.nvm"
+        nvm_dir: "home/admin/.nvm"
 
     - name: Installer NVM  et  Node.js
       shell: |
@@ -34,7 +34,8 @@
         executable: /bin/bash
       register: node_install
       become: true
-
+      become_user: admin
+      
 - name: Ensure Git is installed 
   ansible.builtin.package:
     name: git

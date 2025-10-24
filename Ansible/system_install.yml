@@ -13,7 +13,7 @@
 
     - name: Définir le chemin NVM 
       set_fact:
-        nvm_dir: "/root/.nvm"
+        nvm_dir: "home/admin/.nvm"
 
     - name: Installer NVM  et  Node.js
       shell: |
@@ -34,6 +34,7 @@
         executable: /bin/bash
       register: node_install
       become: true
+      become_user: admin
 
 # --- Rotation des logs ---
 - name: Créer le groupe applicatif
