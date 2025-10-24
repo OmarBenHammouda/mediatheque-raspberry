@@ -42,7 +42,6 @@
         HOME: /home/admin
       register: node_install
 
-
 - name: Créer le groupe applicatif
   ansible.builtin.group:
     name: "{{ app_group }}"

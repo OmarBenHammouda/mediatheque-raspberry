@@ -81,6 +81,7 @@
     state: absent
   become: true
 
+
 - name: "Créer un répertoire de build vide"
   file:
     path: "{{ build_dir }}"
