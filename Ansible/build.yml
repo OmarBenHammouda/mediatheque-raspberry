@@ -22,7 +22,7 @@
         mode: '0755'
       become: true
 
-    - name: Installer NVM et Node.js en tant qu'admin
+    - name: Installer NVM et Node.js 
       shell: |
         export HOME=/home/admin
         export NVM_DIR="{{ nvm_dir }}"
@@ -34,7 +34,7 @@
           nvm install {{ node_version }}
           nvm alias default {{ node_version }}
         fi
-        
+        nvm use {{ node_version }}
       args:
         executable: /bin/bash
       become: true
@@ -43,21 +43,52 @@
         HOME: /home/admin
       register: node_install
 
+    - name: "Corriger les permissions des caches"
+      file:
+        path: "{{ item }}"
+        owner: admin
+        group: admin
+        recurse: yes
+        state: directory
+      become: true
+      ignore_errors: yes
+      loop:
+        - "/home/admin/.npm"
+        - "/home/admin/.cache"
+        - "/home/admin/.config"
+
 - name: Ensure Git is installed
   ansible.builtin.package:
     name: git
     state: present
 
+- name: "Préparer les répertoires de cache pour admin"
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: admin
+    group: admin
+    mode: '0755'
+  become: true
+  loop:
+    - "/home/admin/.cache"
+    - "/home/admin/.npm"
+    - "/home/admin/.config"
+
 - name: "Supprimer le répertoire de build s'il existe"
   file:
     path: "{{ build_dir }}"
     state: absent
+  become: true
 
 - name: "Créer un répertoire de build vide"
   file:
     path: "{{ build_dir }}"
     state: directory
+    owner: admin
+    group: admin
     mode: '0755'
+  become: true
 
 - name: "Clone du repository"
   git:
@@ -65,17 +96,23 @@
     dest: "{{ build_dir }}"
     version: "{{ CI_COMMIT_SHORT_SHA }}"
     force: true
+  become: true
+  become_user: admin
   register: git_clone_result
 
 - name: "Affichage du commit utilisé"
   debug:
     msg: "Commit utilisé: {{ CI_COMMIT_SHORT_SHA}} ({{ git_clone_result.after }})"
 
+
 - name: "Création d'un fichier vide avec le nom du commit"
   file:
     path: "{{ build_dir }}/.{{ CI_COMMIT_SHORT_SHA}}."
     state: touch
+    owner: admin
+    group: admin
     mode: '0644'
+  become: true
 
 - name: "Vérification du fichier package.json"
   stat:
@@ -84,15 +121,24 @@
 
 - name: "Installation des dépendances NPM"
   shell: |
+    export HOME=/home/admin
     export NVM_DIR="{{ nvm_dir }}"
     [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
     nvm use {{ node_version }}
-    npm install --production=false
+    
+    
+    # Nettoyer le cache npm
+    npm cache clean --force 2>/dev/null || true
+    
+    # Installer les dépendances
+    npm install --omit=dev
   args:
     executable: /bin/bash
     chdir: "{{ build_dir }}"
   become: true
   become_user: admin
+  environment:
+    HOME: /home/admin
   when: package_json.stat.exists
 
 - name: "Suppression des fichiers inutiles pour le déploiement"
