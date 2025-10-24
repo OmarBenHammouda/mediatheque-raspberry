@@ -1,61 +1,44 @@
-- name: "Installer Node.js"
+- name: "Installer Node.js via NVM"
   block:
-  
-    - name: Nettoyer les anciens dépôts NodeSource
-      shell: |
-        rm -f /etc/apt/sources.list.d/nodesource.list
-        rm -f /etc/apt/sources.list.d/nodesource*.list
-        rm -f /usr/share/keyrings/nodesource.gpg
-      args:
-        executable: /bin/bash
-      become: true
 
-    - name: Mettre à jour le cache APT après nettoyage
-      apt:
-        update_cache: yes
-      become: true
-
-    - name: Installer les dépendances
+    - name: Installer les dépendances nécessaires
       apt:
         name:
           - curl
-          - gnupg
+          - ca-certificates
+          - git
         state: present
         update_cache: yes
+      become: true
 
+    - name: Définir le chemin NVM 
+      set_fact:
+        nvm_dir: "/root/.nvm"
 
-    - name: Ajouter la clé GPG de NodeSource
-      apt_key:
-        url: "https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key"
-        state: present
-
-    - name: Ajouter le dépôt NodeSource 
+    - name: Installer NVM  et  Node.js
       shell: |
-        curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
+        export NVM_DIR="{{ nvm_dir }}"
+        if [ ! -s "$NVM_DIR/nvm.sh" ]; then
+          curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
+        fi
+        # Charger NVM
+        [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+        # Installer Node.js si non présent
+        if ! nvm ls | grep -q "v{{ node_version }}"; then
+          nvm install {{ node_version }}
+          nvm alias default {{ node_version }}
+        fi
+        # Vérifier la version
+        node -v
       args:
         executable: /bin/bash
+      register: node_install
       become: true
 
-    - name: Installer Node.js et npm
-      apt:
-        name: nodejs
-        state: present
-        update_cache: yes
-      become: true
-
-    - name: Installer build-essential
-      apt:
-        name: build-essential
-        state: present
-      become: true
-
-    - name: Ensure Git is installed 
-      ansible.builtin.package:
-        name: git
-        state: present 
-
-  when: ansible_os_family == "Debian"
-    
+- name: Ensure Git is installed 
+  ansible.builtin.package:
+    name: git
+    state: present 
 
 - name: "Supprimer le répertoire de build s'il existe"
   file:
