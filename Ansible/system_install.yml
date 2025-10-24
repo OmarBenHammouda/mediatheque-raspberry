@@ -1,42 +1,48 @@
 - name: "Installer Node.js via NVM"
   block:
-
     - name: Installer les dépendances nécessaires
       apt:
         name:
           - curl
-          - ca-certificates
           - git
         state: present
         update_cache: yes
       become: true
 
-    - name: Définir le chemin NVM 
+    - name: Définir le chemin NVM
       set_fact:
         nvm_dir: "/home/admin/.nvm"
 
-    - name: Installer NVM  et  Node.js
+    - name: Créer le répertoire .nvm
+      file:
+        path: "{{ nvm_dir }}"
+        state: directory
+        owner: admin
+        group: admin
+        mode: '0755'
+      become: true
+
+    - name: Installer NVM et Node.js en tant qu'admin
       shell: |
+        export HOME=/home/admin
         export NVM_DIR="{{ nvm_dir }}"
         if [ ! -s "$NVM_DIR/nvm.sh" ]; then
           curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
         fi
-        # Charger NVM
         [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-        # Installer Node.js si non présent
         if ! nvm ls | grep -q "v{{ node_version }}"; then
           nvm install {{ node_version }}
           nvm alias default {{ node_version }}
         fi
-        # Vérifier la version
-        node -v
       args:
         executable: /bin/bash
-      register: node_install
       become: true
       become_user: admin
+      environment:
+        HOME: /home/admin
+      register: node_install
 
-# --- Rotation des logs ---
+
 - name: Créer le groupe applicatif
   ansible.builtin.group:
     name: "{{ app_group }}"
