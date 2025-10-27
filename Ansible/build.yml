@@ -9,13 +9,9 @@
         update_cache: yes
       become: true
 
-    - name: Définir le chemin NVM
-      set_fact:
-        nvm_dir: "/home/admin/.nvm"
-
     - name: Créer le répertoire .nvm
       file:
-        path: "{{ nvm_dir }}"
+        path: "/home/admin/.nvm"
         state: directory
         owner: admin
         group: admin
@@ -24,18 +20,19 @@
 
     - name: Installer NVM et Node.js 
       shell: |
-        export HOME=/home/admin
-        export NVM_DIR="{{ nvm_dir }}"
-        mkdir -p "$NVM_DIR"
-        
+        {{ nvm_load }}
+
+        # Installer NVM si absent
+
         if [ ! -s "$NVM_DIR/nvm.sh" ]; then
           curl -fsSL https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
         fi
-        
-        export NVM_DIR="$HOME/.nvm"
-        [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
-        [ -s "$NVM_DIR/bash_completion" ] && . "$NVM_DIR/bash_completion"
-        
+
+        # Recharger NVM pour s'assurer qu'il est bien disponible
+
+        {{ nvm_load }}
+
+        # Installer Node.js et le définir par défaut
         nvm install {{ node_version }} || true
         nvm alias default {{ node_version }}
         nvm use default
@@ -46,20 +43,6 @@
       environment:
         HOME: /home/admin
       register: node_install
-
-    - name: "Corriger les permissions des caches"
-      file:
-        path: "{{ item }}"
-        owner: admin
-        group: admin
-        recurse: yes
-        state: directory
-      become: true
-      ignore_errors: yes
-      loop:
-        - "/home/admin/.npm"
-        - "/home/admin/.cache"
-        - "/home/admin/.config"
 
 - name: Ensure Git is installed
   ansible.builtin.package:
@@ -85,7 +68,6 @@
     state: absent
   become: true
 
-
 - name: "Créer un répertoire de build vide"
   file:
     path: "{{ build_dir }}"
@@ -109,7 +91,6 @@
   debug:
     msg: "Commit utilisé: {{ CI_COMMIT_SHORT_SHA}} ({{ git_clone_result.after }})"
 
-
 - name: "Création d'un fichier vide avec le nom du commit"
   file:
     path: "{{ build_dir }}/.{{ CI_COMMIT_SHORT_SHA}}."
@@ -126,11 +107,8 @@
 
 - name: "Installation des dépendances NPM"
   shell: |
-    export HOME=/home/admin
-    export NVM_DIR="{{ nvm_dir }}"
-    [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+    {{ nvm_load }}
     nvm use {{ node_version }}
-    
     
     # Nettoyer le cache npm
     npm cache clean --force 2>/dev/null || true
