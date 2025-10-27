@@ -98,7 +98,12 @@
       User={{ app_user }}
       Group={{ app_group }}
       WorkingDirectory={{ LOCATION_PATH }}/{{ CI_PROJECT_NAME }}
-      ExecStart=/usr/bin/npm start --prefix {{ LOCATION_PATH }}/{{ CI_PROJECT_NAME }}
+
+      Environment="NVM_DIR=/home/admin/.nvm"
+      Environment="PATH=/home/admin/.nvm/versions/node/v{{ node_version }}/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+
+
+      ExecStart=/bin/bash -lc 'npm start --prefix {{ LOCATION_PATH }}/{{ CI_PROJECT_NAME }}'
       Restart=always
       RestartSec=10
       StandardOutput=journal

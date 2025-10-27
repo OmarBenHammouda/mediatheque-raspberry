@@ -9,31 +9,33 @@
         update_cache: yes
       become: true
 
-    - name: Définir le chemin NVM
-      set_fact:
-        nvm_dir: "/home/admin/.nvm"
-
     - name: Créer le répertoire .nvm
       file:
-        path: "{{ nvm_dir }}"
+        path: "/home/admin/.nvm"
         state: directory
         owner: admin
         group: admin
         mode: '0755'
       become: true
 
-    - name: Installer NVM et Node.js en tant qu'admin
+    - name: Installer NVM et Node.js 
       shell: |
-        export HOME=/home/admin
-        export NVM_DIR="{{ nvm_dir }}"
+        {{ nvm_load }}
+
+        # Installer NVM si absent
+
         if [ ! -s "$NVM_DIR/nvm.sh" ]; then
-          curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
+          curl -fsSL https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
         fi
-        [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-        if ! nvm ls | grep -q "v{{ node_version }}"; then
-          nvm install {{ node_version }}
-          nvm alias default {{ node_version }}
-        fi
+
+        # Recharger NVM pour s'assurer qu'il est bien disponible
+
+        {{ nvm_load }}
+
+        # Installer Node.js et le définir par défaut
+        nvm install {{ node_version }} || true
+        nvm alias default {{ node_version }}
+        nvm use default
       args:
         executable: /bin/bash
       become: true
