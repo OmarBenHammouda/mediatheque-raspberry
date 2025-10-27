@@ -101,12 +101,8 @@
       Group={{ app_group }}
       WorkingDirectory={{ LOCATION_PATH }}/{{ CI_PROJECT_NAME }}
 
-      ExecStart=/bin/bash -c '
-        export NVM_DIR="/home/admin/.nvm";
-        [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh";
-        nvm use default;
-        npm start --prefix {{ LOCATION_PATH }}/{{ CI_PROJECT_NAME }};
-      '
+      ExecStart=/bin/bash -lc 'export NVM_DIR="/home/admin/.nvm"; [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"; nvm use default; npm start --prefix {{ LOCATION_PATH }}/{{ CI_PROJECT_NAME }}'
+
       Restart=always
       RestartSec=10
       StandardOutput=journal
