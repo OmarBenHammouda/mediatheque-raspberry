@@ -86,15 +86,7 @@
   command: id -u {{ app_user }} 
   register: appuser_uid 
 
-- name: Récupérer la version complète de Node installée
-  shell: |
-    export NVM_DIR="/home/admin/.nvm"
-    [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
-    nvm current
-  args:
-    executable: /bin/bash
-  become_user: admin
-  register: node_current_version
+
 
 - name: "Créer le service systemd pour Raspberry Player"
   copy:
