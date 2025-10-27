@@ -86,6 +86,16 @@
   command: id -u {{ app_user }} 
   register: appuser_uid 
 
+- name: Récupérer la version complète de Node installée
+  shell: |
+    export NVM_DIR="/home/admin/.nvm"
+    [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
+    nvm current
+  args:
+    executable: /bin/bash
+  become_user: admin
+  register: node_current_version
+
 - name: "Créer le service systemd pour Raspberry Player"
   copy:
     content: |
@@ -100,8 +110,7 @@
       WorkingDirectory={{ LOCATION_PATH }}/{{ CI_PROJECT_NAME }}
 
       Environment="NVM_DIR=/home/admin/.nvm"
-      Environment="PATH=/home/admin/.nvm/versions/node/v{{ node_version }}/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
-
+      Environment="PATH=/home/admin/.nvm/versions/node/{{ node_current_version.stdout }}/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 
       ExecStart=/bin/bash -lc 'npm start --prefix {{ LOCATION_PATH }}/{{ CI_PROJECT_NAME }}'
       Restart=always
