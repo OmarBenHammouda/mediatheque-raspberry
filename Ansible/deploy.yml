@@ -127,7 +127,7 @@
       RestartPreventExitStatus=0
 
       [Install]
-      WantedBy=graphical.target
+      WantedBy=multi-user.target
     dest: "/etc/systemd/system/raspberry-player.service"
     mode: '0644'
     owner: root
