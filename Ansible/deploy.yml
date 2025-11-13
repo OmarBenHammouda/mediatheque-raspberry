@@ -102,7 +102,7 @@
     content: |
       [Unit]
       Description=Raspberry Player - Médiathèque Digital Signage
-      After=network.target graphical.target
+      After=network.target 
 
       [Service]
       Type=simple
