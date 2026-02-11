@@ -10,4 +10,4 @@ release:
   script:
     - semantic-release
   only:
-    - Omar # change branch name if different
+    - main # change branch name if different
