@@ -76,7 +76,7 @@
     remote_src: true
   become: true
 
-- name: "Suppression de l'archive après extraction"
+- name: "Suppression de 'archive après extraction"
   file:
     path: "{{ LOCATION_PATH }}/{{CI_PROJECT_NAME}}/releases"
     state: absent
