@@ -96,8 +96,8 @@
   become_user: admin
   register: node_current_version
 
-
-- name: "Créer le service systemd pour Raspberry Player"
+ 
+- name: "Créer le service systemd pour Raspberry Playe"
   copy:
     content: |
       [Unit]
