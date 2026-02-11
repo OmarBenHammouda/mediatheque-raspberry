@@ -97,7 +97,7 @@
   register: node_current_version
 
  
-- name: "Créer le service systemd pour Raspberry Playe"
+- name: "Créer le service systemd pour Raspberry Player"
   copy:
     content: |
       [Unit]
