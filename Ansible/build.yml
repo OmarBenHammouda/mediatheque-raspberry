@@ -11,7 +11,7 @@
 
 - name: Récupérer le vrai SHA du tag (compatible annotated tag)
   command: >
-    git ls-remote --tags {{ PROJECT_URL }} "{{ CI_TAG }}^{}"
+    git ls-remote --tags git@gitlab.rdmc.fr:{{ PROJECT_URL }}.git "{{ CI_TAG }}^{}"
   register: tag_info
 
 - name: Extraire le short SHA (8 caractères)
