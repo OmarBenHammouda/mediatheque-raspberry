@@ -9,18 +9,25 @@
 #   debug:
 #     msg: "Tag {{ CI_TAG }} corresponds to commit short SHA {{ CI_COMMIT_SHORT_SHA.stdout }}"
 
-- name: Récupérer le vrai SHA du tag (compatible annotated tag)
-  command: >
-    git ls-remote --tags git@gitlab.rdmc.fr:{{ PROJECT_URL }}.git "{{ CI_TAG }}^{}"
+- name: Récupérer le vrai SHA du tag depuis GitLab (HTTPS + token)
+  command:
+    argv:
+      - git
+      - ls-remote
+      - --tags
+      - "https://oauth2:{{ TOKEN }}@gitlab.rdmc.fr/{{ PROJECT_URL }}.git"
+      - "{{ CI_TAG }}^{}"
   register: tag_info
+  no_log: true   # IMPORTANT pour ne pas afficher le token
 
 - name: Extraire le short SHA (8 caractères)
   set_fact:
     CI_COMMIT_SHORT_SHA: "{{ tag_info.stdout.split()[0][:8] }}"
 
-- name: Afficher le short SHA
+- name: Afficher le résultat
   debug:
     msg: "Short SHA du tag {{ CI_TAG }} = {{ CI_COMMIT_SHORT_SHA }}"
+
 
 
 
