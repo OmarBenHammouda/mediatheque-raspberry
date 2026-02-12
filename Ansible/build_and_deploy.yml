@@ -9,6 +9,17 @@
         build_dir: "/tmp/build"
       run_once: true
 
+    - name: Get short SHA from tag
+      command: git rev-parse --short=8 "{{ CI_TAG }}^{commit}"
+      args:
+        chdir: "{{ PROJECT_URL }}"
+      register: CI_COMMIT_SHORT_SHA
+      changed_when: false
+      debug:
+        msg: "Tag {{ CI_TAG }} corresponds to commit short SHA {{ CI_COMMIT_SHORT_SHA.stdout }}"
+
+
+
 
 - name: "Build Application"
   hosts: local_build
@@ -16,15 +27,6 @@
   vars_files:
     - vars.yml
   tasks:
-    - name: Get short SHA from tag
-      command: git rev-parse --short=8 "{{ git_tag }}^{commit}"
-      args:
-        chdir: "{{ PROJECT_URL }}"
-      register: CI_COMMIT_SHORT_SHA
-      changed_when: false
-      debug:
-        msg: "Tag {{ git_tag }} corresponds to commit short SHA {{ CI_COMMIT_SHORT_SHA.stdout }}"
-
     - name: "Étape 1: Build de l'application"
       import_tasks: build.yml
 
