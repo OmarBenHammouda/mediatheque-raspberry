@@ -4,8 +4,11 @@
     chdir: "{{ PROJECT_URL }}"
   register: CI_COMMIT_SHORT_SHA
   changed_when: false
+
+- name: Show short SHA for tag
   debug:
-  msg: "Tag {{ git_tag }} corresponds to commit short SHA {{ CI_COMMIT_SHORT_SHA.stdout }}"
+    msg: "Tag {{ git_tag }} corresponds to commit short SHA {{ CI_COMMIT_SHORT_SHA.stdout }}"
+
 
 
 
