@@ -9,14 +9,7 @@
         build_dir: "/tmp/build"
       run_once: true
 
-    - name: Get short SHA from tag
-      command: git rev-parse --short=8 "{{ CI_TAG }}^{commit}"
-      args:
-        chdir: "{{ PROJECT_URL }}"
-      register: CI_COMMIT_SHORT_SHA
-      changed_when: false
-      debug:
-        msg: "Tag {{ CI_TAG }} corresponds to commit short SHA {{ CI_COMMIT_SHORT_SHA.stdout }}"
+
 
 
 

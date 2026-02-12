@@ -10,9 +10,6 @@
     msg: "Tag {{ CI_TAG }} corresponds to commit short SHA {{ CI_COMMIT_SHORT_SHA.stdout }}"
 
 
-
-
-
 - name: "Installer Node.js via NVM"
   block:
     - name: Installer les dépendances nécessaires
