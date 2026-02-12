@@ -1,3 +1,15 @@
+- name: Get short SHA from tag
+  command: git rev-parse --short=8 "{{ git_tag }}^{commit}"
+  args:
+    chdir: "{{ PROJECT_URL }}"
+  register: CI_COMMIT_SHORT_SHA
+  changed_when: false
+  debug:
+  msg: "Tag {{ git_tag }} corresponds to commit short SHA {{ CI_COMMIT_SHORT_SHA.stdout }}"
+
+
+
+
 - name: "Installer Node.js via NVM"
   block:
     - name: Installer les dépendances nécessaires
