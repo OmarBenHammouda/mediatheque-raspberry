@@ -1,13 +1,3 @@
-# - name: Get short SHA from tag
-#   command: git rev-parse --short=8 "{{ CI_TAG }}^{commit}"
-#   args:
-#     chdir: "{{ PROJECT_URL }}"
-#   register: CI_COMMIT_SHORT_SHA
-#   changed_when: false
-
-# - name: Show short SHA for tag
-#   debug:
-#     msg: "Tag {{ CI_TAG }} corresponds to commit short SHA {{ CI_COMMIT_SHORT_SHA.stdout }}"
 
 - name: Lister tous les tags distants
   command:
@@ -17,7 +7,7 @@
       - --tags
       - "https://gitlab-ci-token:{{ TOKEN }}@gitlab.rdmc.fr/{{ PROJECT_URL }}.git"
   register: tags_raw
-  no_log: true  # cache le token
+  no_log: true  
 
 - name: Vérifier que le tag existe
   fail:
@@ -25,7 +15,7 @@
   when: >
     (tags_raw.stdout_lines | select('search', 'refs/tags/' ~ CI_TAG ~ '$') | list | length) == 0
 
-- name: Extraire le short SHA (8 caractères) du tag choisi
+- name: Extraire le short SHA  du tag choisi
   set_fact:
     CI_COMMIT_SHORT_SHA: >-
       {{
@@ -39,9 +29,6 @@
 - name: Afficher le short SHA
   debug:
     msg: "Short SHA du tag {{ CI_TAG }} = {{ CI_COMMIT_SHORT_SHA }}"
-
-
-
 
 
 
