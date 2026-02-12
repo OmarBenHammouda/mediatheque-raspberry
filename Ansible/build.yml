@@ -15,7 +15,7 @@
       - git
       - ls-remote
       - --tags
-      - "https://oauth2:{{ GITLAB_TOKEN }}@gitlab.rdmc.fr/{{ PROJECT_URL }}.git"
+      - "https://oauth2:{{ TOKEN }}@gitlab.rdmc.fr/{{ PROJECT_URL }}.git"
       - "refs/tags/{{ CI_TAG }}^{}"
   register: tag_info
   no_log: true
