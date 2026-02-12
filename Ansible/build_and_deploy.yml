@@ -10,10 +10,6 @@
       run_once: true
 
 
-
-
-
-
 - name: "Build Application"
   hosts: local_build
   gather_facts: false
