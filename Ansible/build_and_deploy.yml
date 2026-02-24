@@ -26,6 +26,18 @@
   vars_files:
     - vars.yml
   tasks:
+
+    - name: Extraire le short SHA du tag choisi
+      set_fact:
+        CI_COMMIT_SHORT_SHA: >-
+          {{
+            (tags_raw.stdout_lines
+            | select('search', 'refs/tags/' ~ CI_TAG ~ '(\^{}|$)')
+            | list
+            | last
+            ).split()[0][:8]
+          }}
+
     - name: "Vérifier l'existence du fichier CI_COMMIT_SHORT_SHA"
       stat:
         path: "{{ LOCATION_PATH }}/{{ CI_PROJECT_NAME }}/.{{ CI_COMMIT_SHORT_SHA }}."
