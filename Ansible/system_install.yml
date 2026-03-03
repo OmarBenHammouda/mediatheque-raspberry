@@ -6,6 +6,8 @@
           - curl
           - git
           - netcat-openbsd
+          - mc                
+          - cec-utils  
         state: present
         update_cache: yes
       become: true
