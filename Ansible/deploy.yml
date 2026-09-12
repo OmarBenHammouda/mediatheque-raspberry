@@ -4,7 +4,7 @@
       - git
       - ls-remote
       - --tags
-      - "https://gitlab-ci-token:{{ TOKEN }}@gitlab.rdmc.fr/{{ PROJECT_URL }}.git"
+      - "https://gitlab-ci-token:{{ TOKEN }}@github.com/{{ PROJECT_URL }}.git"
   register: tags_raw
   no_log: true  
 
